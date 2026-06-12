@@ -2,6 +2,8 @@
 
 **Доступ:** [http://45.151.102.35](http://45.151.102.35)
 
+**Вмдео** https://drive.google.com/file/d/1YP1PVocymVbzCKABOruu5NZIZpk5e9de/view?usp=sharing 
+
 Веб-приложение для загрузки, анализа, визуализации и машинного обучения на данных.
 
 ## Стек
