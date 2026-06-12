@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DLab</title>
+    <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.27.1/plotly.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="shell">
+
+    <!-- Sidebar -->
+    <nav>
+        <div class="nav-header">
+            <span class="logo">Data<em>Lab</em></span>
+        </div>
+        <div class="nav-section-label">Меню</div>
+        <ul>
+            <li><a href="#" class="active" data-page="load">Загрузка данных</a></li>
+            <li><a href="#" data-page="columns">Структура</a></li>
+            <li><a href="#" data-page="preprocess">Предобработка</a></li>
+            <li><a href="#" data-page="stats">Статистика</a></li>
+            <li><a href="#" data-page="charts">Графики</a></li>
+            <li><a href="#" data-page="ml">Обучение ML</a></li>
+        </ul>
+        <div class="nav-footer">
+            <div>DLab</div>
+            <div id="navDataStatus">нет данных</div>
+        </div>
+    </nav>
+
+    <!-- Main -->
+    <div class="main">
+        <div class="topbar">
+            <span class="breadcrumb">DLab /</span>
+            <h1 id="pageTitle">Загрузка данных</h1>
+            <div class="topbar-right">
+                <span class="tag tag-gray" id="dataInfo">—</span>
+            </div>
+        </div>
+
+        <div class="content">
+
+            <!-- LOAD -->
+            <div id="page-load" class="page active">
+                <div class="panel">
+                    <div class="panel-header">
+                        <span class="panel-title">Источник данных</span>
+                        <button class="btn btn-secondary btn-sm" id="openDbModalBtn">Подключить БД</button>
+                    </div>
+                    <div class="panel-body">
+                        <div class="upload-zone" id="dropZone">
+                            <div class="upload-icon">↑</div>
+                            <h3>Перетяните файл или нажмите для выбора</h3>
+                            <p>CSV, XLSX, XLS, Parquet, JSON — до 500 МБ</p>
+                        </div>
+                        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.parquet,.json" style="display:none;">
+
+                        <div class="form-row cols-3 mt-16">
+                            <div class="form-group">
+                                <label class="form-label">CSV разделитель</label>
+                                <select id="csvSep">
+                                    <option value=",">Запятая (,)</option>
+                                    <option value=";">Точка с запятой (;)</option>
+                                    <option value="&#9;">Табуляция</option>
+                                    <option value="|">Pipe (|)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Загрузить строк</label>
+                                <input type="number" id="nrows" placeholder="например 50000">
+                            </div>
+                            <div class="form-group" style="justify-content:flex-end;padding-top:20px;">
+                                <button class="btn btn-primary" id="uploadBtn">Загрузить файл</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel" id="previewCard" style="display:none;">
+                    <div class="panel-header"><span class="panel-title">Предпросмотр — первые 10 строк</span></div>
+                    <div class="panel-body" style="padding:0;">
+                        <div class="table-wrap" id="previewTable"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMNS -->
+            <div id="page-columns" class="page">
+                <div class="panel">
+                    <div class="panel-header"><span class="panel-title">Структура датасета</span></div>
+                    <div class="panel-body" style="padding:0;">
+                        <div id="columnsTable" style="padding:16px;color:var(--text-secondary);">Загрузите данные</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PREPROCESS -->
+            <div id="page-preprocess" class="page">
+                <div class="panel">
+                    <div class="panel-header"><span class="panel-title">Добавить операцию</span></div>
+                    <div class="panel-body">
+                        <div class="form-row cols-2">
+                            <div class="form-group">
+                                <label class="form-label">Колонка</label>
+                                <select id="ppCol"></select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Операция</label>
+                                <select id="ppOp">
+                                    <optgroup label="Пропуски">
+                                        <option value="drop_nulls">Удалить строки с пропусками</option>
+                                        <option value="fill_mean">Заполнить средним</option>
+                                        <option value="fill_median">Заполнить медианой</option>
+                                        <option value="fill_mode">Заполнить модой</option>
+                                        <option value="fill_value">Заполнить значением</option>
+                                    </optgroup>
+                                    <optgroup label="Типы">
+                                        <option value="cast_int"> Integer</option>
+                                        <option value="cast_float"> Float</option>
+                                        <option value="cast_datetime"> Datetime</option>
+                                        <option value="cast_category"> Category</option>
+                                    </optgroup>
+                                    <optgroup label="Кодирование">
+                                        <option value="label_encode">Label Encoding</option>
+                                        <option value="one_hot">One-Hot Encoding</option>
+                                    </optgroup>
+                                    <optgroup label="Нормализация">
+                                        <option value="normalize_minmax">Min-Max нормализация</option>
+                                        <option value="normalize_zscore">Z-score стандартизация</option>
+                                    </optgroup>
+                                    <optgroup label="Выбросы">
+                                        <option value="remove_outliers_iqr">Удалить выбросы (IQR)</option>
+                                    </optgroup>
+                                    <optgroup label="Прочее">
+                                        <option value="drop_column">Удалить колонку</option>
+                                        <option value="rename">Переименовать</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="ppExtra" style="margin-bottom:12px;"></div>
+                        <button class="btn btn-secondary" id="addOpBtn">+ Добавить в очередь</button>
+                    </div>
+                </div>
+
+                <div class="panel" id="opsCard" style="display:none;">
+                    <div class="panel-header">
+                        <span class="panel-title">Очередь операций</span>
+                        <div class="flex flex-gap-8">
+                            <button class="btn btn-ghost btn-sm" id="exportCsvBtn">Скачать CSV</button>
+                            <button class="btn btn-ghost btn-sm" id="exportParquetBtn">Скачать Parquet</button>
+                            <button class="btn btn-success btn-sm" id="applyPreprocessBtn">Применить всё</button>
+                            <button class="btn btn-secondary btn-sm" id="resetDataBtn">Сбросить</button>
+                        </div>
+                    </div>
+                    <div class="panel-body"><div id="opsList"></div></div>
+                </div>
+                <div class="panel" id="ppLogCard" style="display:none;">
+                    <div class="panel-header"><span class="panel-title">Лог операций</span></div>
+                    <div class="log-box" id="ppLog"></div>
+                </div>
+            </div>
+
+            <!-- STATISTICS -->
+            <div id="page-stats" class="page">
+                <div class="panel">
+                    <div class="panel-header">
+                        <span class="panel-title">Выбор колонок</span>
+                        <div class="flex flex-gap-8">
+                            <button class="btn btn-secondary btn-sm" id="selectAllStatsBtn">Все</button>
+                            <button class="btn btn-secondary btn-sm" id="clearStatsBtn">Сбросить</button>
+                            <button class="btn btn-primary btn-sm" id="runStatsBtn">Анализировать</button>
+                        </div>
+                    </div>
+                    <div class="panel-body" style="padding:0;">
+                        <div id="statsColList" class="col-check-list"></div>
+                    </div>
+                </div>
+                <div id="statsResult"></div>
+            </div>
+
+            <!-- CHARTS -->
+            <div id="page-charts" class="page">
+                <div class="panel">
+                    <div class="panel-header"><span class="panel-title">Конструктор графиков</span></div>
+                    <div class="chart-builder">
+                        <div class="chart-controls">
+                            <div class="form-group">
+                                <label class="form-label">Тип графика</label>
+                                <select id="chartType">
+                                    <option value="scatter">Scatter plot</option>
+                                    <option value="line">Line chart</option>
+                                    <option value="bar">Bar chart</option>
+                                    <option value="histogram">Histogram</option>
+                                    <option value="box">Box plot</option>
+                                    <option value="violin">Violin plot</option>
+                                    <option value="pie">Pie chart</option>
+                                    <option value="density">Density plot</option>
+                                    <option value="heatmap">Correlation heatmap</option>
+                                    <option value="scatter_matrix">Scatter matrix</option>
+                                    <option value="parallel">Parallel coordinates</option>
+                                </select>
+                            </div>
+                            <div id="axisX" class="form-group">
+                                <label class="form-label">Ось X</label>
+                                <div id="dropX" class="drop-zone" data-axis="x"></div>
+                            </div>
+                            <div id="axisY" class="form-group">
+                                <label class="form-label">Ось Y</label>
+                                <div id="dropY" class="drop-zone" data-axis="y"></div>
+                            </div>
+                            <div id="aggGroup" class="form-group">
+                                <label class="form-label">Агрегация Y</label>
+                                <select id="chartAggregation">
+                                    <option value="none">Без агрегации</option>
+                                    <option value="avg">AVG (среднее)</option>
+                                    <option value="sum">SUM (сумма)</option>
+                                    <option value="min">MIN</option>
+                                    <option value="max">MAX</option>
+                                    <option value="count">COUNT</option>
+                                    <option value="median">MEDIAN</option>
+                                    <option value="nunique">COUNT DISTINCT</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Цвет / группировка</label>
+                                <div id="dropColor" class="drop-zone" data-axis="color"></div>
+                            </div>
+                            <div id="nbinsGroup" class="form-group" style="display:none;">
+                                <label class="form-label">Количество bins</label>
+                                <input type="number" id="nbins" value="30" min="5" max="200">
+                            </div>
+                            <button class="btn btn-primary" id="buildChartBtn">Построить</button>
+                            <div>
+                                <div class="form-label" style="margin-bottom:6px;">Колонки</div>
+                                <div id="colPalette" class="col-palette"></div>
+                            </div>
+                        </div>
+                        <div class="chart-output">
+                            <div id="chartDiv" class="chart-area"></div>
+                            <div class="mt-12">
+                                <div class="form-label" style="margin-bottom:6px;">SQL запрос</div>
+                                <pre id="chartQuery" class="query-box">SELECT * FROM data;</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ML -->
+            <div id="page-ml" class="page">
+                <div class="ml-layout">
+                    <div class="ml-config">
+                        <div class="panel">
+                            <div class="panel-header"><span class="panel-title">Параметры модели</span></div>
+                            <div class="panel-body" style="display:flex;flex-direction:column;gap:12px;">
+                                <div class="form-group">
+                                    <label class="form-label">Алгоритм</label>
+                                    <select id="mlModel">
+                                        <optgroup label="Классификация">
+                                            <option value="random_forest_clf">Random Forest</option>
+                                            <option value="logistic">Logistic Regression</option>
+                                            <option value="decision_tree_clf">Decision Tree</option>
+                                            <option value="gradient_boost">Gradient Boosting</option>
+                                        </optgroup>
+                                        <optgroup label="Регрессия">
+                                            <option value="random_forest_reg">Random Forest (рег.)</option>
+                                            <option value="linear_regression">Linear Regression</option>
+                                            <option value="decision_tree_reg">Decision Tree (рег.)</option>
+                                        </optgroup>
+                                        <optgroup label="Кластеризация">
+                                            <option value="kmeans">K-Means</option>
+                                        </optgroup>
+                                    </select>
+                                </div>
+
+                                <!-- Блок целевой переменной (Y) -->
+                                <div class="form-group" id="mlTargetGroup">
+                                    <label class="form-label">Целевая переменная (Y)</label>
+                                    <select id="mlTarget"></select>
+                                </div>
+
+                                <!-- Блок числа кластеров (для KMeans) -->
+                                <div class="form-group" id="mlClustersGroup" style="display:none;">
+                                    <label class="form-label">Число кластеров (K)</label>
+                                    <input type="number" id="mlClusters" value="3" min="2" max="20">
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Тестовая выборка (%)</label>
+                                    <input type="number" id="mlTestSize" value="20" min="5" max="50">
+                                </div>
+
+                                <!-- Блок гиперпараметров -->
+                                <div id="hyperparamsBlock" style="display: none;">
+                                    <div class="form-group" id="hp_n_group">
+                                        <label class="form-label">n_estimators (для Random Forest / Gradient Boosting)</label>
+                                        <input type="number" id="hp_n_estimators" value="100" min="10" max="500" step="10">
+                                    </div>
+                                    <div class="form-group" id="hp_depth_group">
+                                        <label class="form-label">max_depth</label>
+                                        <input type="number" id="hp_max_depth" placeholder="None">
+                                    </div>
+                                    <div class="form-group" id="hp_c_group" style="display: none;">
+                                        <label class="form-label">C (обратная сила регуляризации для Logistic Regression)</label>
+                                        <input type="number" id="hp_c" value="1.0" step="0.1">
+                                    </div>
+                                </div>
+
+                                <!-- Блок признаков (X) -->
+                                <div>
+                                    <div class="form-label" style="margin-bottom:6px;">Признаки (X)</div>
+                                    <div class="action-bar" style="margin-bottom:6px;">
+                                        <button class="btn btn-secondary btn-sm" id="selectAllFeaturesBtn">Выбрать все</button>
+                                        <button class="btn btn-secondary btn-sm" id="clearFeaturesBtn">Сбросить</button>
+                                    </div>
+                                    <div id="mlFeatureList" class="col-check-list"></div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="form-label">Имя модели</label>
+                                    <div class="flex flex-gap-8 model-controls">
+                                        <input type="text" id="modelName" placeholder="my_model">
+                                        <button class="btn btn-secondary" id="saveModelBtn">Сохранить</button>
+                                        <button class="btn btn-secondary" id="loadModelBtn">Загрузить</button>
+                                    </div>
+                                </div>
+
+                                <button class="btn btn-success" id="trainModelBtn">Обучить модель</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div id="mlStatus" class="panel" style="display:none;">
+                            <div class="panel-body" id="mlStatusText" style="font-family:'IBM Plex Mono',monospace;font-size:13px;"></div>
+                        </div>
+                        <div id="mlMetrics"></div>
+                        <div id="mlCharts"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- DB connection modal -->
+<div class="overlay" id="dbModal">
+    <div class="modal">
+        <div class="modal-header">
+            <span class="modal-title">Подключение к базе данных</span>
+            <button class="btn btn-secondary btn-sm" id="closeDbModalBtn">Закрыть</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">SQLAlchemy URL</label>
+                <input type="text" id="dbUrl" placeholder="postgresql://user:pass@host/db">
+            </div>
+            <div class="form-group">
+                <label class="form-label">SQL-запрос</label>
+                <textarea id="dbQuery" rows="4" placeholder="SELECT * FROM my_table LIMIT 10000"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="cancelDbModalBtn">Отмена</button>
+            <button class="btn btn-primary" id="connectDbBtn">Подключить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for histogram -->
+<div class="overlay" id="histModal">
+    <div class="modal" style="width: 700px;">
+        <div class="modal-header">
+            <span class="modal-title">Гистограмма распределения</span>
+            <button class="btn btn-sm btn-secondary" onclick="document.getElementById('histModal').classList.remove('show')">Закрыть</button>
+        </div>
+        <div class="modal-body" id="histChart" style="height: 420px;"></div>
+    </div>
+</div>
+
+<div id="toast">
+    <div class="toast-type" id="toastType">Info</div>
+    <div id="toastMsg"></div>
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}" type="module"></script>
+</body>
+</html>

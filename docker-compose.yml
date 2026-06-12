@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: datalab_web
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - SESSION_TIMEOUT_MINUTES=60
+      - MAX_CONTENT_LENGTH=524288000
+    volumes:
+      - ./static:/app/static
+      - uploads_data:/app/uploads
+      - models_data:/app/models
+    networks:
+      - internal
+
+  nginx:
+    image: nginx:alpine
+    container_name: datalab_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./static:/app/static:ro        
+      - uploads_data:/app/uploads:ro
+    depends_on:
+      - web
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  uploads_data:
+  models_data:

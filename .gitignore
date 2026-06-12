@@ -1,0 +1,35 @@
+# Виртуальное окружение
+venv/
+.venv/
+env/
+.env/
+
+# Кэш Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Логи и временные файлы
+*.log
+*.tmp
+
+# Загруженные файлы и модели (Docker volumes)
+uploads/
+models/
+
+# Секреты
+.env
+.secrets
+
+# Файлы IDE
+.vscode/
+.idea/
+*.swp
+
+# Docker (не обязательно, но можно)
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
